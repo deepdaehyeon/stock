@@ -1,4 +1,4 @@
 pandas 
-investpy
-investiny
-
+yahoo-finance 
+ray 
+yfinance
