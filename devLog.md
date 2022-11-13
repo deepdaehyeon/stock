@@ -9,9 +9,14 @@
 * construct data crawling function using yahoo-finance
 
 
+
+
 ------
+;
+;
 # Todo 
+* construct gym environment with simple feature(open, close, high, low)
+* build model 
 * data preprocess 
-* construct pipeline 
 * open hantoo account 
 * setup trading system 

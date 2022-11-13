@@ -1,8 +1,7 @@
-# Nuts 
+# MARS
 
-This is Nasdaq aUto Trading System developed by dh.kim
+This is Macro-index Auto trading System developed by Daehyeon Kim & Hongkyu Kim 
 the system is based on reinforcement learning 
-we use collab for model training 
 
 -----------
 ## Tools 
@@ -13,6 +12,8 @@ we use collab for model training
 * Crawling: yahoo-finance 
 
 * Trading platform: Hantoo (web socket)
+
+* Training: google colab
 
 -----------
 ## Data

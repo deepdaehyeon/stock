@@ -1,7 +1,9 @@
-ticker: 
+etf: 
  - QQQ
  - UVXY
  - GLD
  - XOP
  - SHY
  - IEF
+index: 
+- cpi
