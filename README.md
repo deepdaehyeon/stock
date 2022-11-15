@@ -9,11 +9,13 @@ the system is based on reinforcement learning
 
 * rl lib(ray) : https://github.com/ray-project/ray.git 
 
-* Crawling: yahoo-finance 
+* Crawling: yahoo-finance & beautifulsoup(TBD)
 
 * Trading platform: Hantoo (web socket)
 
 * Training: google colab
+
+* Data source: https://datasetsearch.research.google.com/ 를
 
 -----------
 ## Data
