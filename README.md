@@ -7,7 +7,7 @@ the system is based on reinforcement learning
 ## Tools 
 * trading env(gym) : https://github.com/notadamking/Stock-Trading-Environment.git
 
-* rl lib(ray) : https://github.com/ray-project/ray.git 
+* rl library : stable_baseline3 
 
 * Crawling: yahoo-finance & beautifulsoup(TBD)
 
@@ -15,7 +15,7 @@ the system is based on reinforcement learning
 
 * Training: google colab
 
-* Data source: https://datasetsearch.research.google.com/ 를
+* Data source: https://datasetsearch.research.google.com/ 
 
 -----------
 ## Data

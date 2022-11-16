@@ -1,4 +1,4 @@
 pandas 
-yahoo-finance 
-ray 
 yfinance
+gym 
+stable-baselines3 
