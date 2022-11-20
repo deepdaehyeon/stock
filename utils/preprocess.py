@@ -13,6 +13,7 @@ if True:
     parser = argparse.ArgumentParser() 
     # parser.add_argument('--year', type=int, default= 2022)
     args = parser.parse_args()
+    # Train/test dataset 나누는 arg 필요 
     
     ## Configs 
     BASEPATH =os.getcwd()+'/.' 
@@ -26,7 +27,6 @@ def main():
         # Load data
         df = pd.read_csv(BASEPATH+f'/data/rawdata/{f}')
         df['Date']= df.Date.transform(lambda x: x.split(' ')[0])
-
 
         # Feature engineering 
         ''' TBD '''
