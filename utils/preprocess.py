@@ -1,5 +1,7 @@
 import pandas as pd 
 import os
+from sklearn.model_selection import train_test_split 
+
 
 class Prep:
     def __init__(self, args, export_dir='data/rawdata'):
@@ -36,10 +38,13 @@ class Prep:
                 ret = pd.merge(left = ret, right = df, on='Date', validate='one_to_one') 
             
         # Discrete version dataset split 
-        
+        df_train, df_test= train_test_split(ret, test_size = self.args.test_size, random_state = self.args.random_seed) # random seed를 정해줘야 재현성이 보장됨 
+        df_train, df_valid= train_test_split(df_train, test_size = self.args.valid_size, random_state = self.args.random_seed) # random seed를 정해줘야 재현성이 보장됨 
         
         # Save result csv
-        ret.to_csv(DATAPATH+f'/data/train.csv')
+        df_train.to_csv(DATAPATH+f'/data/train.csv')
+        df_valid.to_csv(DATAPATH+f'/data/valid.csv')
+        df_test.to_csv(DATAPATH+f'/data/test.csv')
 
 
 
