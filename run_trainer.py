@@ -14,12 +14,15 @@ import yaml
 
 
 '''
-Rl model 학습과정은 
-https://github.com/araffin/rl-tutorial-jnrr19/tree/sb3
-https://stable-baselines3.readthedocs.io/en/master/guide/examples.html 참고 
+# Stable_baseline 3 doc. 을 참고하여 진행!!
+- Tutorial: https://github.com/araffin/rl-tutorial-jnrr19/tree/sb3
+- Model compatibility: https://stable-baselines3.readthedocs.io/en/master/guide/algos.html
+- Examples: https://stable-baselines3.readthedocs.io/en/master/guide/examples.html 
 
-확실하진 않지만 학습환경의 데이터셋이 연속적이여야 하는 것 같다. 그러므로 train/test dataset 을 파일을 구분하여 저장해놔야함. 
- 
+* RL 학습의 본체는 utils/env.py 이다. 
+
+* train/test dataset 을 파일을 구분하여 저장해놔야함. 
+* discrete/ continuous dataset인지 확인하는게 중요 
 
 
 '''
@@ -36,6 +39,7 @@ if True:
     BASEPATH =os.getcwd() +'/..' 
     with open(BASEPATH+'/config/config.yaml') as conf:
         config = yaml.load(conf, Loader = yaml.FullLoader) 
+    D = dt.datetime.strftime('%m%d_%H%M')
 
 def main(): 
     # Create envs 
@@ -48,9 +52,12 @@ def main():
         model = ppo(ActorCriticPolicy, env, verbose=1)
     elif args.model =='a2c': 
         model = a2c(ActorCriticPolicy, env, verbose=1)
+    
+    # Train
+    model.learn(total_timesteps=20000) 
+    model.save(f'./ckpt/{D}')
 
-    # Train loop 
-    model.learn(total_timesteps=20000) # 
+    # Test: test dataset으로 env 변경이 필요함 
     obs = env.reset() # environment initializing 
     for i in range(2000):
         action, _states = model.predict(obs)
