@@ -5,17 +5,16 @@ from datetime import datetime
 
 
 class Prep:
-    def __init__(self, args, export_dir='data/rawdata'):
+    def __init__(self, args, export_dir='/data/rawdata/'):
         self.BASEPATH = os.getcwd().replace('\\', '/')
         self.export_dir = export_dir
         self.args = args 
         
-    def prep(self): 
+    def _prep(self): 
         DATAPATH =self.BASEPATH + self.export_dir
-        
+        ret = None 
         # for all raw data files
         for f in os.listdir(DATAPATH): 
-            
             # Load data
             df = pd.read_csv(DATAPATH+f)
             df['Date']= df.Date.transform(lambda x: x.split(' ')[0])
@@ -24,41 +23,45 @@ class Prep:
             L = self.args.long_period
             M = self.args.mid_period
             S = self.args.short_period
-            df['Lhigh'] = df['high'].rolling(L).max()
-            df['Llow'] = df['low'].rolling(L).min()
-            df['Lmean'] = df['open'].rolling(L).mean()
+            df['Lhigh'] = df['High'].rolling(L).max()
+            df['Llow'] = df['Low'].rolling(L).min()
+            df['Lmean'] = df['Open'].rolling(L).mean()
             
-            df['Mhigh'] = df['high'].rolling(M).max()
-            df['Mlow'] = df['low'].rolling(M).min()
-            df['Mmean'] = df['open'].rolling(M).mean()
+            df['Mhigh'] = df['High'].rolling(M).max()
+            df['Mlow'] = df['Low'].rolling(M).min()
+            df['Mmean'] = df['Open'].rolling(M).mean()
             
-            df['Shigh'] = df['high'].rolling(S).max()
-            df['Smean'] = df['open'].rolling(S).mean()
-            df['Slow'] = df['low'].rolling(S).min()
+            df['Shigh'] = df['High'].rolling(S).max()
+            df['Slow'] = df['Low'].rolling(S).min()
+            df['Smean'] = df['Open'].rolling(S).mean()
             
-            df['Lamount'] = df['amount'].rolling(L).mean()
-            df['Mamount'] = df['amount'].rolling(M).mean()
-            df['Samount'] = df['amount'].rolling(S).mean()
+            df['Lvolume'] = df['Volume'].rolling(L).mean()
+            df['Mvolume'] = df['Volume'].rolling(M).mean()
+            df['Svolume'] = df['Volume'].rolling(S).mean()
             
             ## Price scaling  
             cols = [c for c in df.columns if 'Date' not in c]  
             cols_price = [c for c in cols if 'amount' not in c]  
+            if self.args.scaling_mode =='plain':
+                stdv = df[self.args.scaling_price]
+                mean = 0 
+            elif self.args.scaling_mode =='minmax': 
+                stdv = df[self.args.scaling_price[0]]
+                mean = df[self.args.scaling_price[1]]
+            else: 
+                assert NotImplementedError
             for col in cols_price: 
-                if self.args.scaling_mode =='plain': 
-                    df[col] = df.transform(lambda x: x[col]/x[self.args.scaling_price] )
-                else: 
-                    df[col] = df.transform(lambda x: (x[col]- x[self.args.scaling_price[0]])/x[self.args.scaling_price[1]] )
-                    
+                df[col] -= mean 
+                df[col] /= stdv 
+
             ## amount scaling  
             cols_amount = [c for c in cols if c not in cols_price]  
             for col in cols_amount: 
                 df[col] = df.transform(lambda x: x[col]/x[self.args.scaling_amount] )
             
             ## Drop scaling columns 
-            for col in list(self.args.scailing_price): 
-                df.drop(col, axis=1, inplace= True)
-            for col in list(self.args.scailing_amount): 
-                df.drop(col, axis=1, inplace= True)
+            df.drop(self.args.scaling_price, axis=1, inplace= True)
+            df.drop(self.args.scaling_amount, axis=1, inplace= True)
 
             # rename column 
             D = {c:c+"_"+f.split('.')[0] for c in df.columns if 'Date' not in c}
@@ -73,7 +76,10 @@ class Prep:
         
         # Append day and month 
         ret['day'] = ret['Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d').weekday()) 
-        ret['month'] = ret['Date'].split('-')[1] 
+        ret['month'] = ret['Date'].apply(lambda x: x.split('-')[1]) 
+        
+        # Drop NaN 
+        ret.dropna(axis = 0, inplace = True )
                     
         # Discrete version dataset split 
         ## random seed를 정해줘야 재현성이 보장됨 
@@ -81,9 +87,9 @@ class Prep:
         df_train, df_valid= train_test_split(df_train, test_size = self.args.valid_size,shuffle=True, random_state = self.args.random_seed)
         
         # Save result csv
-        df_train.to_csv(DATAPATH+f'/data/train.csv')
-        df_valid.to_csv(DATAPATH+f'/data/valid.csv')
-        df_test.to_csv(DATAPATH+f'/data/test.csv')
+        df_train.to_csv(DATAPATH+f'../train.csv')
+        df_valid.to_csv(DATAPATH+f'../valid.csv')
+        df_test.to_csv(DATAPATH+f'../test.csv')
 
 
 
