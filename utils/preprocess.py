@@ -43,16 +43,16 @@ class Prep:
             cols = [c for c in df.columns if 'Date' not in c]  
             cols_price = [c for c in cols if 'amount' not in c]  
             if self.args.scaling_mode =='plain':
-                stdv = df[self.args.scaling_price]
+                den = df[self.args.scaling_price]
                 mean = 0 
-            elif self.args.scaling_mode =='minmax': 
-                stdv = df[self.args.scaling_price[0]]
-                mean = df[self.args.scaling_price[1]]
-            else: 
+            elif self.args.scaling_mode =='minmax':
+                mean = df[self.args.scaling_price[0]]
+                den = df[self.args.scaling_price[1]] - mean
+            else:
                 assert NotImplementedError
             for col in cols_price: 
                 df[col] -= mean 
-                df[col] /= stdv 
+                df[col] /= den
 
             ## amount scaling  
             cols_amount = [c for c in cols if c not in cols_price]  
