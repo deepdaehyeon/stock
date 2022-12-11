@@ -1,5 +1,7 @@
+numpy 
 pandas 
 yfinance
-gym 
-stable-baselines3 
 scikit-learn
+torch
+# gym 
+# stable-baselines3 
