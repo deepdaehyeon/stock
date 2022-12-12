@@ -23,6 +23,10 @@ if True:
     parser.add_argument('--model', type=str, default= 'mlp', 
                         choices=['mlp', 'saint'] )
     
+    parser.add_argument('--emb_dim', type=int, default= 16)
+    parser.add_argument('--hidden_dim', type=int, default= 128)
+    parser.add_argument('--depth', type=int, default= 3)
+     
     parser.add_argument('--order', type=str, default= 'min', choices=['max', 'min']) 
     parser.add_argument('--ckpt', type=str, default= None) 
     parser.add_argument('--epochs', type=int, default= 20) 

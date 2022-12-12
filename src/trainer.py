@@ -79,9 +79,12 @@ class CustomDataset(Dataset):
     def __init__(self, types= 'train'): 
         self.df = pd.read_csv(C.datapath+f'{types}.csv')
         cols = self.df.columns() 
-        self.all = [c for c in cols if C.X in c]
+        self.all = [c for c in cols if  C.X in c]
         self.cy = [c for c in cols if 'next' in cols]
         self.cx = [c for c in self.all if c not in self.cy]
+        
+        C.cy = self.cy 
+        C.cx = self.cx 
 
     def __len__(self):
         return len(self.df)
@@ -120,7 +123,7 @@ def _valid_step(model,dataloader, criterion):
             
 def _define_model(args):
     if args.model == 'mlp': 
-        model = MLPNET() 
+        model = MLPNET(emb_dim= args.emb_dim, n_cols = C.cx, out_dim = C.cy, n_layers = args.depth, hidden_dim = args.hidden_dim) 
     else: 
         raise NotImplementedError('no ')
     return model 
