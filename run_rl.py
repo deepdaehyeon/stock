@@ -4,6 +4,7 @@ TBD
 Reinforcement learning 이전에 
 supervised learning 을 먼저 적용하기로 결정
 '''
+
 if False:    
 
     import gym

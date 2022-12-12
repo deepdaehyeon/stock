@@ -53,6 +53,7 @@ class Prep:
                 den = df[self.args.scaling_price[1]] - mean
             else:
                 assert NotImplementedError
+                
             for col in cols_price: 
                 df[col] -= mean 
                 df[col] /= den
@@ -71,7 +72,6 @@ class Prep:
             df.rename(D, axis=1, inplace=True)
             
             # Merge
-            
             if ret is None: 
                 ret = df 
             else: 
