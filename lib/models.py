@@ -2,10 +2,12 @@ import torch
 from torch import nn
 
 
+class Embedding(nn.Module): 
+    pass 
 
 class MLPNET(nn.Module): 
     def __init__(self, emb_dim, n_cols, out_dim, n_layers, hidden_dim):
-        self.embedding = None
+        self.embedding = Embedding() 
         input_dim = emb_dim * n_cols 
         b = [input_dim if i ==0 else hidden_dim  for i in range(n_layers) ] 
         h = [hidden_dim, out_dim]
