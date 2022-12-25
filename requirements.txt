@@ -3,5 +3,7 @@ pandas
 yfinance
 scikit-learn
 torch
+lightgbm
+optuna
 # gym 
 # stable-baselines3 
