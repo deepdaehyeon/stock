@@ -2,31 +2,37 @@ from datetime import datetime
 import yaml
 import os
 import yfinance as yf 
+from dataclasses import dataclass
+from typing import Dict, List
 
 # Modules
+@dataclass
 class Crawler:
-    def __init__(self, args, export_dir='data/rawdata'):
+    export_dir: str = 'data/rawdata'
+    year: str = '2000' 
+    month: str = '01' 
+    day: str = '01'
+    
+    def __post_init__(self): 
         self.BASEPATH = os.getcwd().replace('\\', '/')
-        self.export_dir = export_dir
-        self.args = args 
-        with open(f'{self.BASEPATH}/config/config.yaml') as conf:
+        with open(f'{self.BASEPATH}/env/config.yaml') as conf:
             config = yaml.load(conf, Loader=yaml.FullLoader)
         self.config =  config 
         
-    def crawl(self, ticker_list = None):
-        from_date = f'{self.args.year}-{self.args.month}-{self.args.day}'
+    def run(self, etf_list = None, index_list = None):
+        from_date = f'{self.year}-{self.month}-{self.day}'
         to_date = datetime.now().strftime('%Y-%m-%d') 
         
         # ETF Crawling
-        if ticker_list is None:
-            ticker_list = self.config['etf']
-            for ticker in ticker_list:
-                df = yf.download(ticker, start=from_date, end=to_date)
-                df.to_csv(f'{self.BASEPATH}/{self.export_dir}/{ticker}.csv')
+        if etf_list is None:
+            etf_list = self.config['etf']
+        for ticker in etf_list:
+            df = yf.download(ticker, start=from_date, end=to_date)
+            df.to_csv(f'{self.BASEPATH}/{self.export_dir}/{ticker}.csv')
         
         # Economic indicator 
-        elif ticker_list == 'cpi': 
-            pass 
+        # if index_list is None: 
+        #     ticker_list = self.config['index']
         
         '''
         macro economic indicator 의 경우, 
