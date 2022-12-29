@@ -15,7 +15,7 @@ class Config:
     datapath = './data/'
     ckptpath = './bin/ckpt/'
     with open('./config/config.yaml') as f: 
-        conf = yaml.load(f)
+        conf = yaml.load(f, Loader=yaml.FullLoader)
     X = conf['X']    
 
 C = Config 

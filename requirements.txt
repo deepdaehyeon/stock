@@ -2,8 +2,9 @@ numpy
 pandas 
 yfinance
 scikit-learn
-torch
 lightgbm
 optuna
+yaml
+# torch
 # gym 
 # stable-baselines3 
