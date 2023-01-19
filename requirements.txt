@@ -5,6 +5,7 @@ scikit-learn
 lightgbm
 optuna
 yaml
+pyarrow
 # torch
 # gym 
 # stable-baselines3 

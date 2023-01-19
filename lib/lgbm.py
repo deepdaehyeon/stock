@@ -11,6 +11,7 @@ from optuna.samplers import TPESampler
 from sklearn.metrics import mean_absolute_error
 from dataclasses import dataclass 
 
+from lib import StockDataFrame
 warnings.filterwarnings('ignore')
 
 C = Config 
@@ -63,30 +64,3 @@ def objective(trial: Trial, self, target_col):
     score = mean_absolute_error(y_pred, valid_set._y)
     return score
 
-
-# lgbm dataset wrapper
-class LgbmDataset(lgb.Dataset): 
-    def __init__(self, types = 'train', target_y = 'QQQ'):
-        df = pd.read_csv(os.path.join(C.datapath, types +'.csv'))
-        cols = [c for c in df.columns if 'Unnamed' not in c and 'Date' not in c]
-        cy = [c for c in cols if 'next' in c and target_y in c]
-        cxcat = C.cat
-        cxnum = [c for c in cols if 'next' not in c and c not in cxcat]
-        
-        # cast type 
-        df[cxnum] = df[cxnum].astype(float)
-        df[cxcat] = df[cxcat].astype(int)
-        df[cy] = df[cy].astype(float)
-        
-        self.df = df 
-        self.X = df[cxnum+cxcat]        
-        self.y = df[cy]
-        super(LgbmDataset, self).__init__(self.X, self.y, categorical_feature=cxcat) 
-    
-    @property
-    def _y(self): 
-        return self.y
-    
-    @property
-    def _X(self): 
-        return self.X

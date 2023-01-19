@@ -1,13 +1,18 @@
 import pandas as pd 
+from termcolor import cprint  
 import os
 from sklearn.model_selection import train_test_split 
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field 
+from env.config import Config 
+
+C = Config 
 
 @dataclass
 class Prep:
-    scaling_mode: str = 'plain'
-    scaling_price: str = 'Open'
+    dataset_name: datetime = field( default_factory= lambda: datetime.now().strftime( '%Y-%m-%d%' ))
+    target_period: int = 5 
+    scaling_price: str = 'Close'
     scaling_amount: str = 'Lvolume'
     long_period: int = 100
     mid_period: int = 45
@@ -15,18 +20,14 @@ class Prep:
     test_size: float  = 0.1
     valid_size: float = 0.2
     random_seed: int  = 1117
-    export_dir: str ='/data/rawdata/'
-    
-    def __post_init__(self):
-        self.BASEPATH = os.getcwd().replace('\\', '/')
         
     def run(self): 
         ret = None 
-        DATAPATH = self.BASEPATH + self.export_dir
         # for all raw data files
-        for f in os.listdir(DATAPATH): 
+        raw_data_path = os.path.join(C.datapath, 'rawdata')
+        for f in os.listdir(raw_data_path): 
             # Load data
-            df = pd.read_csv(DATAPATH+f)
+            df = pd.read_csv(os.path.join(raw_data_path, f))
             df['Date'] = df.Date.transform(lambda x: x.split(' ')[0])
             
             # Feature engineering
@@ -49,21 +50,14 @@ class Prep:
             df['Mvolume'] = df['Volume'].rolling(M).mean()
             df['Svolume'] = df['Volume'].rolling(S).mean()
 
-            ## Reward 계산 목적 다음 날 종가 가격 저장 (리밸런싱 시점: 종가 -> 종가에 사고팔고, 다음날은 종가까지 기다림)
-            df['next_close_price'] = df['Close'].shift(periods=-1)
+            ## 향후 5일간의 평균가를 예측하는 문제로 세팅
+            df['y'] = df['Close'].rolling(self.target_period).mean().shift(periods=-self.target_period) 
             
             ## Price scaling  
             cols = [c for c in df.columns if 'Date' not in c]  
             cols_price = [c for c in cols if 'amount' not in c]  
-            if self.scaling_mode == 'plain':
-                den = df[self.scaling_price]
-                mean = 0 
-            elif self.scaling_mode == 'minmax':
-                mean = df[self.scaling_price[0]]
-                den = df[self.scaling_price[1]] - mean
-            else:
-                assert NotImplementedError
-                
+            den = df[self.scaling_price]
+            mean = 0 
             for col in cols_price: 
                 df[col] -= mean 
                 df[col] /= den
@@ -93,13 +87,25 @@ class Prep:
         
         # Drop NaN 
         ret.dropna(axis = 0, inplace = True )
-                    
+
         # Discrete version dataset split 
         ## random seed를 정해줘야 재현성이 보장됨 
         df_train, df_test= train_test_split(ret, test_size = self.test_size, shuffle=False, random_state = self.random_seed) 
         df_train, df_valid= train_test_split(df_train, test_size = self.valid_size,shuffle=True, random_state = self.random_seed)
+
+        df_train.reset_index(drop = True, inplace= True)
+        df_valid.reset_index(drop = True, inplace= True)
+        df_test.reset_index(drop = True, inplace= True)
+
+        # Save as feather form 
+        os.makedirs(os.path.join(C.datapath, self.dataset_name), exist_ok=True) 
         
-        # Save result csv
-        df_train.to_csv(DATAPATH+f'../train.csv')
-        df_valid.to_csv(DATAPATH+f'../valid.csv')
-        df_test.to_csv(DATAPATH+f'../test.csv')
+        df_train.to_feather(os.path.join(C.datapath, self.dataset_name, 'train.feather')) 
+        df_valid.to_feather(os.path.join(C.datapath, self.dataset_name, 'valid.feather' )) 
+        df_test.to_feather(os.path.join(C.datapath, self.dataset_name, 'test.feather')) 
+        
+        cprint(f'datasets saved at {os.path.join(C.datapath, self.dataset_name)}', 'green')
+        cprint(f'# of train sample : {len(df_train)}', 'green')
+        cprint(f'# of valid sample : {len(df_valid)}', 'green')
+        cprint(f'# of test sample : {len(df_test)}', 'green')
+    
