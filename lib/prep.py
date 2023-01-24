@@ -84,8 +84,8 @@ class Prep:
             ret = df if ret is None else pd.merge(left=ret, right=df, on='Date', validate='one_to_one')
         
         # Append day and month 
-        ret['cat|day'] = ret['Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d').weekday()) 
-        ret['cat|month'] = ret['Date'].apply(lambda x: x.split('-')[1]) 
+        ret['cat|day'] = ret['Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d').weekday()).astype(int)
+        ret['cat|month'] = ret['Date'].apply(lambda x: x.split('-')[1]).astype(int)
         
         # Drop NaN 
         ret.dropna(axis = 0, inplace = True )
@@ -101,8 +101,9 @@ class Prep:
 
         # Meta data 
         meta = {
-            'ycol': [c for c in df_train.columns if 'label|' in c],  
             'allcol': [c for c in df_train.columns ],  
+            'ycol': [c for c in df_train.columns if 'label|' in c],  
+            'xcol': [c for c in df_train.columns if 'label|' not in c and 'Date' not in c],  
             'numcol': [c for c in df_train.columns if 'num|' in c],  
             'catcol': [c for c in df_train.columns if 'cat|' in c],  
             'target_period' : self.target_period,

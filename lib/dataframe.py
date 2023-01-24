@@ -42,13 +42,12 @@ class StockDataFrame():
             print('There is no loaded data group')
         else: 
             ycol = self.meta['ycol']
-            xcol = [c for c in self.meta['allcol'] if c not in ycol]
+            xcol = self.meta['xcol']
             catcol = self.meta['catcol']
             for types, df in self.datagroup.items(): 
                 self.lgbm_datagroup[types] = {} 
-                for label in ycol: 
-                    _label = label.split('|')[1]
-                    self.lgbm_datagroup[types][_label] = lgb.Dataset(df[xcol], label = _label, categorical_feature=catcol)
+                for target in ycol: 
+                    self.lgbm_datagroup[types][target] = lgb.Dataset(df[xcol], label = df[target], categorical_feature=catcol)
 
     @classmethod
     def list_datagroup(cls): 
