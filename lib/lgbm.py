@@ -13,7 +13,7 @@ import optuna
 from optuna import Trial
 from optuna.samplers import TPESampler
 from sklearn.metrics import mean_absolute_error
-from dataclasses import dataclass       
+from dataclasses import dataclass, field       
 
 from lib.dataframe import StockDataFrame 
 from datetime import datetime 
@@ -29,6 +29,7 @@ class LgbmTrainInstance:
     isTuned: bool = False 
     isTrained: bool = False 
     params = None
+    models: dict = field(default_factory=dict)
 
     @classmethod
     def list_instance(cls): 
@@ -57,16 +58,9 @@ class LgbmTrainInstance:
         return "______________________"
 
     def train(self, sdf: StockDataFrame , **params): 
-        self.models = {}
         self.params = params
         self.datagroup_name = sdf.datagroup_name
         self.isTrained = True
-        
-        self.meta = {
-            'param' : params, 
-            'datagroup_name' : self.datagroup_name, 
-            'instance_name' : self.instance_name
-        }
 
         dg = sdf.lgbm_datagroup
         targets = [c for c in dg['train'].keys()]
@@ -84,24 +78,35 @@ class LgbmTrainInstance:
             self.models[target] = model 
         
     
-    def tune(self,datagroup, **param_space): 
-        study = optuna.create_study(direction='minimize',sampler=TPESampler(seed=self.random_seed))
-        study.optimize(lambda trial : objective(trial, self, param_space, datagroup), n_trials=self.n_trials)
-        print('Best trial: score {},\nparams {}'.format(study.best_trial.value,study.best_trial.params))
+    def tune(self, sdf: StockDataFrame, _param_space, n_trial, random_seed = 17): 
+        targets = [c for c in sdf.datagroup['train'].keys()]
+        for target in targets: 
+            study = optuna.create_study(direction='minimize',sampler=TPESampler(seed = random_seed))
+            study.optimize(
+                lambda trial : self.objective(target, trial, _param_space, sdf),
+                n_trials= n_trial ,
+            )
+            cprint(f'{target}"s Best trial: score {study.best_trial.value}, \n params {study.best_trial.params}', 'green')    
+            self.models[target] = study.user_attrs['best_booster']
+
+    def objective(self, target, trial, _param_space, sdf): 
+        train_set = sdf.datagroup['train'][target]
+        valid_set = sdf.datagroup['valid'][target]
+        callbacks = [lgb.callback.early_stopping(300), 
+                     bestmodel_callback]
     
-def objective(trial: Trial, self, param_space, datagroup): 
-    train_set = datagroup['train']
-    valid_set = datagroup['valid']
-    callbacks = [lgb.callback.early_stopping(self.early_stopping_round)]
+        model = lgb.train(params= _param_space(trial),
+                        train_set= train_set, 
+                        valid_sets = valid_set,
+                        verbose_eval= 100, 
+                        callbacks= callbacks, 
+        )
+        trial.set_user_attr(key='best_booster', value = model)
+        y_pred = model.predict(valid_set[sdf.meta['xcol']])
+        score = mean_absolute_error(y_pred, valid_set[sdf.meta['ycol']])
+        return score
 
-    model = lgb.train(params= param_space,
-                      num_boost_round= self.n_batch, 
-                      train_set= train_set, 
-                      valid_sets = valid_set,
-                      verbose_eval= False, 
-                      callbacks= callbacks, 
-    )
-    y_pred = model.predict(valid_set._X)
-    score = mean_absolute_error(y_pred, valid_set._y)
-    return score
 
+def bestmodel_callback(study, trial): 
+    if study.best_trial.number == trial.number: 
+        study.set_user_attr(key= 'bset_booster', value = trial.user_attrs['best_booster'])
