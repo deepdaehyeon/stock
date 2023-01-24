@@ -5,6 +5,8 @@ from sklearn.model_selection import train_test_split
 from datetime import datetime
 from dataclasses import dataclass, field 
 from env.config import Config 
+import json 
+
 
 C = Config 
 
@@ -24,10 +26,10 @@ class Prep:
     def run(self): 
         ret = None 
         # for all raw data files
-        raw_data_path = os.path.join(C.datapath, 'rawdata')
-        for f in os.listdir(raw_data_path): 
+        raw_path= os.path.join(C.datapath, 'rawdata')
+        for f in os.listdir(raw_path): 
             # Load data
-            df = pd.read_csv(os.path.join(raw_data_path, f))
+            df = pd.read_csv(os.path.join(raw_path, f))
             df['Date'] = df.Date.transform(lambda x: x.split(' ')[0])
             
             # Feature engineering
@@ -72,18 +74,18 @@ class Prep:
             df.drop(self.scaling_amount, axis=1, inplace= True)
 
             # rename column 
-            D = {c:c+"_"+f.split('.')[0] for c in df.columns if 'Date' not in c}
+            D = {c:"num|" + c+"_"+f.split('.')[0] for c in df.columns if 'Date' not in c and 'label' not in c}
+            D.update({
+                'y' : 'label|'+f.split('.')[0]
+                })
             df.rename(D, axis=1, inplace=True)
             
             # Merge
-            if ret is None: 
-                ret = df 
-            else: 
-                ret = pd.merge(left=ret, right=df, on='Date', validate='one_to_one')
+            ret = df if ret is None else pd.merge(left=ret, right=df, on='Date', validate='one_to_one')
         
         # Append day and month 
-        ret['day'] = ret['Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d').weekday()) 
-        ret['month'] = ret['Date'].apply(lambda x: x.split('-')[1]) 
+        ret['cat|day'] = ret['Date'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d').weekday()) 
+        ret['cat|month'] = ret['Date'].apply(lambda x: x.split('-')[1]) 
         
         # Drop NaN 
         ret.dropna(axis = 0, inplace = True )
@@ -97,12 +99,31 @@ class Prep:
         df_valid.reset_index(drop = True, inplace= True)
         df_test.reset_index(drop = True, inplace= True)
 
-        # Save as feather form 
-        os.makedirs(os.path.join(C.datapath, self.dataset_name), exist_ok=True) 
-        
-        df_train.to_feather(os.path.join(C.datapath, self.dataset_name, 'train.feather')) 
-        df_valid.to_feather(os.path.join(C.datapath, self.dataset_name, 'valid.feather' )) 
-        df_test.to_feather(os.path.join(C.datapath, self.dataset_name, 'test.feather')) 
+        # Meta data 
+        meta = {
+            'ycol': [c for c in df_train.columns if 'label|' in c],  
+            'allcol': [c for c in df_train.columns ],  
+            'numcol': [c for c in df_train.columns if 'num|' in c],  
+            'catcol': [c for c in df_train.columns if 'cat|' in c],  
+            'target_period' : self.target_period,
+            'scaling_price ' : self.scaling_price ,
+            'scaling_amount' : self.scaling_amount,
+            'long_period' : self.long_period,
+            'mid_period' : self.mid_period ,
+            'short_period' : self.short_period ,
+            'test_size' : self.test_size ,
+            'valid_size' : self.valid_size ,
+            'random_seed' : self.random_seed,
+        } 
+        # Save 
+        save_path = os.path.join(C.datapath, self.dataset_name)      
+        os.makedirs(save_path, exist_ok=True) 
+        with open(os.path.join(save_path, 'meta.json'), mode= 'w') as js: 
+            json.dump(meta, js)
+            
+        df_train.to_feather(os.path.join(save_path, 'train.feather')) 
+        df_valid.to_feather(os.path.join(save_path, 'valid.feather' )) 
+        df_test.to_feather(os.path.join( save_path, 'test.feather')) 
         
         cprint(f'datasets saved at {os.path.join(C.datapath, self.dataset_name)}', 'green')
         cprint(f'# of train sample : {len(df_train)}', 'green')

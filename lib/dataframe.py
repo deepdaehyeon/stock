@@ -4,52 +4,53 @@ from env.config import Config
 import os 
 from dataclasses import dataclass 
 from termcolor import cprint 
+import json 
 C = Config 
 
-class StockDataFrame(pd.DataFrame): 
-    @classmethod
-    def dataset_list(cls): 
-        return [c for c in os.listdir(C.datapath) if 'raw' not in c] 
-    
-    @property 
-    def _dataset_name(self): 
-        return self.dataset_name
-    
-    @_dataset_name.setter
-    def _dataset_name(self, text): 
-        self.dataset_name = text 
+class StockDataFrame(): 
+    def __init__(self): 
+        self.datagroup = None 
         
-    def load(self,types ='train'): 
-        path = os.path.join(C.datapath, self.dataset_name, types+'.parquet')
-        self.from_parquet(path)
-        cprint(path,'green')
+    def load_datagroup(self,datagroup_name): 
+        self.datagroup_name = datagroup_name
+        path = os.path.join(C.datapath,datagroup_name)
         
-    def to_lgbmdataset(self): 
-        pass 
-    
+        # load datagroup
+        if self.datagroup is not None: 
+            print('WARNING: datagroup already exist ')
+        self.datagroup = {}
+        for type in ['train', 'valid', 'test']: 
+            self.datagroup[type] = pd.read_feather(os.path.join(path, type+'.feather'))
+        cprint(f'dataset is loaded from {path}','green')
+        # load meta 
+        with open(os.path.join(path, 'meta.json'), mode = 'r') as js: 
+            self.meta = json.load(js)
 
-class LgbmDataset(lgb.Dataset): 
-    def __init__(self, types = 'train', target_y = 'QQQ'):
-        df = pd.read_csv(os.path.join(C.datapath, types +'.csv'))
-        cols = [c for c in df.columns if 'Unnamed' not in c and 'Date' not in c]
-        cy = [c for c in cols if 'next' in c and target_y in c]
-        cxcat = C.cat
-        cxnum = [c for c in cols if 'next' not in c and c not in cxcat]
-        
-        # cast type 
-        df[cxnum] = df[cxnum].astype(float)
-        df[cxcat] = df[cxcat].astype(int)
-        df[cy] = df[cy].astype(float)
-        
-        self.df = df 
-        self.X = df[cxnum+cxcat]        
-        self.y = df[cy]
-        super(LgbmDataset, self).__init__(self.X, self.y, categorical_feature=cxcat) 
+    def __repr__(self): 
+        print(f'Data group "{self.datagroup_name}" Spec.')
+        print("___________________")
+        for k, v in self.meta.items(): 
+            if 'all' not in k: 
+                cprint(k, 'green')
+                cprint(v, 'blue')
+        return '_________________________'
     
-    @property
-    def _y(self): 
-        return self.y
     
-    @property
-    def _X(self): 
-        return self.X
+    def to_lgbm(self): 
+        self.lgbm_datagroup = {} 
+        if self.datagroup is None: 
+            print('There is no loaded data group')
+        else: 
+            ycol = self.meta['ycol']
+            xcol = [c for c in self.meta['allcol'] if c not in ycol]
+            catcol = self.meta['catcol']
+            for types, df in self.datagroup.items(): 
+                self.lgbm_datagroup[types] = {} 
+                for label in ycol: 
+                    _label = label.split('|')[1]
+                    self.lgbm_datagroup[types][_label] = lgb.Dataset(df[xcol], label = _label, categorical_feature=catcol)
+
+    @classmethod
+    def list_datagroup(cls): 
+        return [c for c in os.listdir(C.datapath) if 'raw' not in c] 
+            
