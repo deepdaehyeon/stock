@@ -22,6 +22,7 @@ class StockDataFrame():
         for type in ['train', 'valid', 'test']: 
             self.datagroup[type] = pd.read_feather(os.path.join(path, type+'.feather'))
         cprint(f'dataset is loaded from {path}','green')
+
         # load meta 
         with open(os.path.join(path, 'meta.json'), mode = 'r') as js: 
             self.meta = json.load(js)
